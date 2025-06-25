@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import List
 
 
-def _process_image(image_path: Path, max_length: int, quality: int, verbose: bool = True):
-    output_name = Path(f"./resized/{image_path.stem}_resized{image_path.suffix}")
+def _process_image(image_path: Path, output_folder: Path, max_length: int, quality: int, verbose: bool = True):
+    output_name = output_folder / f"{image_path.stem}_resized{image_path.suffix}"
     command = [
         'ffmpeg',
         '-i', image_path.as_posix(),
@@ -37,7 +37,7 @@ def process_images(images: List[Path], output_folder: Path, max_length: int, qua
 
     # Process images multithreaded
     with Pool() as pool:
-        pool.starmap(_process_image, zip(images, repeat(max_length), repeat(quality), repeat(verbose)))
+        pool.starmap(_process_image, zip(images, repeat(output_folder), repeat(max_length), repeat(quality), repeat(verbose)))
 
 
 def main():
