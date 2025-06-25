@@ -24,7 +24,7 @@ def _process_image(image_path: Path, max_length: int, quality: int, verbose: boo
     if verbose: print(f"Finished processing {image_path.name}")
 
 
-def process_images(images: List[Path], output_folder: Path, max_length: int, quality: int):
+def process_images(images: List[Path], output_folder: Path, max_length: int, quality: int, verbose: bool = True):
     """Process a list of images (multithreaded). For every image, scale it down using ffmpeg such that any side is not longer than `max_length`, preserving aspect ratio, using ffmpeg quality setting of `quality`, outputting into `output_folder`.
 
     Args:
@@ -32,11 +32,12 @@ def process_images(images: List[Path], output_folder: Path, max_length: int, qua
         output_folder (Path): Folder to output resized images to.
         max_length (int): Maximum length of any side of the image after resizing.
         quality (int): Quality setting for ffmpeg, influences resulting file size, higher = worse.
+        verbose (bool, optional): Whether to print processing information. Defaults to True.
     """
 
     # Process images multithreaded
     with Pool() as pool:
-        pool.starmap(_process_image, zip(images, repeat(max_length), repeat(quality)))
+        pool.starmap(_process_image, zip(images, repeat(max_length), repeat(quality), repeat(verbose)))
 
 
 def main():
