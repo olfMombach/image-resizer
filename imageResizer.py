@@ -11,10 +11,10 @@ def _process_image(image_path: Path, output_folder: Path, max_length: int, quali
     output_name = output_folder / f"{image_path.stem}_resized{image_path.suffix}"
     command = [
         'ffmpeg',
-        '-i', image_path.as_posix(),
+        '-i', str(image_path),
         '-vf', f"scale='if(gt(iw,ih),{max_length},-1)':'if(gt(iw,ih),-1,{max_length})'",
         '-q:v', f'{quality}',
-        output_name.as_posix()
+        str(output_name)
     ]
     subprocess.run(
         command,
@@ -58,7 +58,7 @@ def main():
 
     if args.command == "folder":
         # root_folder: Path = args.folder
-        # print(f"Using root folder {root_folder.as_posix()}")
+        # print(f"Using root folder {str(root_folder)}")
         root_folder = Path(".")
         images_to_process: List[Path] = []
         for extension in ("jpg", "jpeg"):
