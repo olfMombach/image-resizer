@@ -6,25 +6,39 @@ from os import mkdir
 from pathlib import Path
 from typing import List
 
+# Number of iterations to increase quality until the image is smaller than 1 MB
+ITERATIONS = 8
 
-def _process_image(image_path: Path, output_folder: Path, max_length: int, quality: int, verbose: bool = True):
+
+def _process_image(image_path: Path, output_folder: Path, max_length: int, start_quality: int, verbose: bool = True, max_filesize: int = 1e6):
     output_name = output_folder / f"{image_path.stem}_resized{image_path.suffix}"
-    command = [
-        'ffmpeg',
-        '-i', str(image_path),
-        '-vf', f"scale='if(gt(iw,ih),{max_length},-1)':'if(gt(iw,ih),-1,{max_length})'",
-        '-q:v', f'{quality}',
-        str(output_name)
-    ]
-    subprocess.run(
-        command,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    quality = start_quality
+    while True:
+        command = [
+            'ffmpeg',
+            '-i', str(image_path),
+            '-vf', f"scale='if(gt(iw,ih),{max_length},-1)':'if(gt(iw,ih),-1,{max_length})'",
+            '-q:v', f'{quality}',
+            '-y',
+            str(output_name)
+        ]
+        subprocess.run(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        if output_name.exists():
+            if output_name.stat().st_size < max_filesize or quality - start_quality > ITERATIONS: # smaller than 1 MB (or Mb? mb? mB?)
+                break
+            quality += 1
+        else:
+            if verbose: print(f"Failed to create output file {output_name}, exiting...")
+            return
     if verbose: print(f"Finished processing {image_path.name}")
 
 
-def process_images(images: List[Path], output_folder: Path, max_length: int, quality: int, verbose: bool = True):
+def process_images(images: List[Path], output_folder: Path, max_length: int, quality: int, verbose: bool = True, max_filesize: int = 1e6):
     """Process a list of images (multithreaded). For every image, scale it down using ffmpeg such that any side is not longer than `max_length`, preserving aspect ratio, using ffmpeg quality setting of `quality`, outputting into `output_folder`.
 
     Args:
@@ -33,11 +47,12 @@ def process_images(images: List[Path], output_folder: Path, max_length: int, qua
         max_length (int): Maximum length of any side of the image after resizing.
         quality (int): Quality setting for ffmpeg, influences resulting file size, higher = worse.
         verbose (bool, optional): Whether to print processing information. Defaults to True.
+        max_filesize (int, optional): Maximum file size in bytes. Defaults to 1e6 (1 MB).
     """
 
     # Process images multithreaded
     with Pool() as pool:
-        pool.starmap(_process_image, zip(images, repeat(output_folder), repeat(max_length), repeat(quality), repeat(verbose)))
+        pool.starmap(_process_image, zip(images, repeat(output_folder), repeat(max_length), repeat(quality), repeat(verbose), repeat(max_filesize)))
 
 
 def main():
